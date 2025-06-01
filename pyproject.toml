@@ -1,0 +1,10 @@
+[project]
+name = "intergrowth-lms-data"
+version = "0.1.0"
+description = "Project made for facilitating the use Intergrowth LMS data"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "pandas>=2.2.3",
+    "seaborn>=0.13.2",
+]
