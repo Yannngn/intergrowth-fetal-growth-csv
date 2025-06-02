@@ -6,29 +6,34 @@ def decimal_log(x: Decimal) -> Decimal:
     return x.ln()
 
 
+def decimal_sqrt(x: Decimal) -> Decimal:
+    return x.sqrt()
+
+
 def decimal_exp(x: Decimal) -> Decimal:
     return x.exp()
 
 
+def decimal_pow(x: Decimal, y: Decimal) -> Decimal:
+    return x**y
+
+
 def z_score_for_fetal_weight(gestational_age_weeks: int, estimated_weight_g: Decimal) -> Decimal:
-    ga_div_10 = Decimal(gestational_age_weeks) / Decimal("10")
+    decimal_ga = Decimal(gestational_age_weeks)
+    ga_div_10 = decimal_ga / Decimal("10")
 
     lambda_ga = (
         Decimal("9.43643")
-        + Decimal("9.41579") * ga_div_10 ** Decimal("-2")
-        - Decimal("83.54220") * decimal_log(ga_div_10) * ga_div_10 ** Decimal("-2")
+        + Decimal("9.41579") * decimal_pow(ga_div_10, Decimal("-2"))
+        - Decimal("83.54220") * decimal_log(ga_div_10) * decimal_pow(ga_div_10, Decimal("-2"))
     )
 
-    mu_ga = (
-        Decimal("-2.42272")
-        + Decimal("1.86478") * Decimal(gestational_age_weeks).sqrt()
-        - Decimal("1.93299e-5") * Decimal(gestational_age_weeks) ** Decimal("3")
-    )
+    mu_ga = Decimal("-2.42272") + Decimal("1.86478") * decimal_ga.sqrt() - Decimal("1.93299e-5") * decimal_pow(decimal_ga, Decimal("3"))
 
     sigma_ga = (
         Decimal("0.0193557")
-        + Decimal("0.0310716") * ga_div_10 ** Decimal("-2")
-        - Decimal("0.0657587") * decimal_log(ga_div_10) * ga_div_10 ** Decimal("-2")
+        + Decimal("0.0310716") * decimal_pow(ga_div_10, Decimal("-2"))
+        - Decimal("0.0657587") * decimal_log(ga_div_10) * decimal_pow(ga_div_10, Decimal("-2"))
     )
 
     y = decimal_log(estimated_weight_g)
@@ -41,42 +46,60 @@ def z_score_for_fetal_weight(gestational_age_weeks: int, estimated_weight_g: Dec
         return numerator / denominator
 
 
-def fetal_weight_from_z_score(gestational_age_weeks: int, z: Decimal) -> Decimal:
-    ga_div_10 = Decimal(gestational_age_weeks) / Decimal("10")
+def get_lambda_ga(gestational_age_weeks: int) -> Decimal:
+    decimal_ga = Decimal(gestational_age_weeks)
+    ga_div_10 = decimal_ga / Decimal("10")
 
-    lambda_ga = (
+    return (
         Decimal("9.43643")
-        + Decimal("9.41579") * ga_div_10 ** Decimal("-2")
-        - Decimal("83.54220") * decimal_log(ga_div_10) * ga_div_10 ** Decimal("-2")
+        + Decimal("9.41579") * decimal_pow(ga_div_10, Decimal("-2"))
+        - Decimal("83.54220") * decimal_log(ga_div_10) * decimal_pow(ga_div_10, Decimal("-2"))
     )
 
-    mu_ga = (
-        Decimal("-2.42272")
-        + Decimal("1.86478") * Decimal(gestational_age_weeks).sqrt()
-        - Decimal("1.93299e-5") * Decimal(gestational_age_weeks) ** Decimal("3")
-    )
 
-    sigma_ga = (
+def get_mu_ga(gestational_age_weeks: int) -> Decimal:
+    decimal_ga = Decimal(gestational_age_weeks)
+
+    return Decimal("-2.42272") + Decimal("1.86478") * decimal_ga.sqrt() - Decimal("1.93299e-5") * decimal_pow(decimal_ga, Decimal("3"))
+
+
+def get_sigma_ga(gestational_age_weeks: int) -> Decimal:
+    decimal_ga = Decimal(gestational_age_weeks)
+    ga_div_10 = decimal_ga / Decimal("10")
+
+    return (
         Decimal("0.0193557")
         + Decimal("0.0310716") * ga_div_10 ** Decimal("-2")
         - Decimal("0.0657587") * decimal_log(ga_div_10) * ga_div_10 ** Decimal("-2")
     )
 
+
+def fetal_weight_from_z_score(gestational_age_weeks: int, z: Decimal) -> Decimal:
+    lambda_ga = get_lambda_ga(gestational_age_weeks)
+
+    mu_ga = get_mu_ga(gestational_age_weeks)
+
+    sigma_ga = get_sigma_ga(gestational_age_weeks)
+
     if lambda_ga == 0:
-        y = mu_ga + sigma_ga * z
+        y = mu_ga * decimal_exp(z * sigma_ga)
     else:
-        y = mu_ga + (decimal_log(Decimal("1") + sigma_ga * lambda_ga * z) / lambda_ga)
+        y = mu_ga * decimal_pow(z * sigma_ga * lambda_ga + Decimal("1"), decimal_pow(lambda_ga, Decimal("-1")))
+
     return decimal_exp(y)
 
 
 def main():
-    with open("estimated_fetal_weight_g_weeks.csv", "w", newline="") as csvfile:
+    with open("tables/estimated_fetal_weight_g_weeks.csv", "w", newline="") as csvfile:
         writer = csv.writer(csvfile)
-        writer.writerow(
-            ["Gestational age (exact weeks)", "-3 SD (g)", "-2 SD (g)", "-1 SD (g)", "0 SD (g)", "1 SD (g)", "2 SD (g)", "3 SD (g)"]
-        )
-        for ga in range(14, 41):
+        writer.writerow(["Week", "L", "M", "S", "SD3neg", "SD2neg", "SD1neg", "SD0", "SD1", "SD2", "SD3"])
+        for ga in range(14, 42):
             row: list = [ga]
+
+            row.append(get_lambda_ga(ga).exp())
+            row.append(get_mu_ga(ga).exp())
+            row.append(get_sigma_ga(ga).exp())
+
             for z in range(-3, 4):
                 weight = fetal_weight_from_z_score(ga, Decimal(z))
                 row.append(round((weight), 2))
