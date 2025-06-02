@@ -26,7 +26,7 @@ def docling_extract_tables(converter: DocumentConverter, source: str, output_dir
 
     text = conv_res.document.export_to_text()
     types = None
-    for tp in ["cm", "mm", "kg", "g", "kg/m"]:
+    for tp in ["kg/m", "cm", "mm", "kg", "g"]:
         if tp in text:
             types = tp.replace("/", "-")
             break
@@ -53,14 +53,16 @@ def docling_extract_tables(converter: DocumentConverter, source: str, output_dir
 
 
 def main():
-    source_list = glob.glob("original/*.pdf")
+    source_list = glob.glob("data/original/*.pdf")
 
     converter = DocumentConverter()
-    os.makedirs("tables", exist_ok=True)
+
+    output_dir = "data/tables"
+    os.makedirs(output_dir, exist_ok=True)
 
     for source in source_list:
         print(f"Processing {source}...")
-        docling_extract_tables(converter, source)
+        docling_extract_tables(converter, source, output_dir=output_dir)
 
 
 if __name__ == "__main__":

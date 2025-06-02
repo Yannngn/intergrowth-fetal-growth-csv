@@ -42,48 +42,34 @@ def estimate_lms(sds, values):
 
 
 def process_file(input_csv, output_csv):
-    # Read and clean header
     df = pd.read_csv(input_csv)
-    # Rename columns
-    rename_map = {
-        df.columns[0]: "Week",
-        "-3 SD (mm)": "SD3neg",
-        "-2 SD (mm)": "SD2neg",
-        "-1 SD (mm)": "SD1neg",
-        "0 SD (mm)": "SD0",
-        "1 SD (mm)": "SD1",
-        "2 SD (mm)": "SD2",
-        "3 SD (mm)": "SD3",
-        "-3 SD (g)": "SD3neg",
-        "-2 SD (g)": "SD2neg",
-        "-1 SD (g)": "SD1neg",
-        "0 SD (g)": "SD0",
-        "1 SD (g)": "SD1",
-        "2 SD (g)": "SD2",
-        "3 SD (g)": "SD3",
-    }
-    df = df.rename(columns={k: v for k, v in rename_map.items() if k in df.columns})
+    if "l" in df.columns and "m" in df.columns and "s" in df.columns:
+        # If LMS parameters already exist, skip processing
+        print(f"Skipping {input_csv}, LMS parameters already present.")
+        df.to_csv(output_csv, index=False)
+        return
 
+    print(f"Processing {input_csv}...")
     # Prepare output
     output = []
     for _, row in df.iterrows():
-        week = row["Week"]
+        value = row[df.columns[0]]
         sds = [-3, -2, -1, 0, 1, 2, 3]
-        values = [row[f"SD{n if n >= 0 else str(abs(n)) + 'neg'}"] for n in sds]
+        values = [row[f"sd{n if n >= 0 else str(abs(n)) + 'neg'}"] for n in sds]
         L, M, S = estimate_lms(sds, values)
         output.append(
             {
-                "Week": week,
-                "L": L,
-                "M": M,
-                "S": S,
-                "SD3neg": values[0],
-                "SD2neg": values[1],
-                "SD1neg": values[2],
-                "SD0": values[3],
-                "SD1": values[4],
-                "SD2": values[5],
-                "SD3": values[6],
+                df.columns[0]: value,
+                "l": L,
+                "m": M,
+                "s": S,
+                "sd3neg": values[0],
+                "sd2neg": values[1],
+                "sd1neg": values[2],
+                "sd0": values[3],
+                "sd1": values[4],
+                "sd2": values[5],
+                "sd3": values[6],
             }
         )
 
@@ -92,8 +78,8 @@ def process_file(input_csv, output_csv):
 
 
 def main():
-    for csv_ in glob.glob("original/*.csv"):
-        process_file(csv_, csv_.replace("original", "tables"))
+    for csv_ in glob.glob("data/tables/*.csv"):
+        process_file(csv_, csv_.replace("tables", "lms"))
 
 
 if __name__ == "__main__":

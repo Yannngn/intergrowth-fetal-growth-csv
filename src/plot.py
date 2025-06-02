@@ -6,7 +6,7 @@ import pandas as pd
 import seaborn as sns
 
 
-def plot_size_graph(csv_path, output_dir="graphs"):
+def plot_size_graph(csv_path, output_dir="data/graphs"):
     sns.set_theme(style="whitegrid")
 
     csv_name = os.path.splitext(os.path.basename(csv_path))[0]
@@ -40,7 +40,7 @@ def plot_size_graph(csv_path, output_dir="graphs"):
         sns.lineplot(x=subset[df.columns[0]], y=subset["Measurement"], label=perc, **line_styles[perc])
 
     plt.xlabel(df.columns[0])
-    plt.ylabel("Measurement (mm)")
+    plt.ylabel(f"Measurement ({csv_name.split('_')[-2]})")
     plt.title(f"Plot for {csv_name}")
     plt.legend(title="Percentile")
     plt.tight_layout()
@@ -49,7 +49,7 @@ def plot_size_graph(csv_path, output_dir="graphs"):
 
 
 def main():
-    for csv_ in glob.glob("tables/*.csv"):
+    for csv_ in glob.glob("data/tables/*.csv"):
         plot_size_graph(csv_)
 
 
