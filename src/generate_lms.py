@@ -1,5 +1,4 @@
 import glob
-
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
@@ -78,7 +77,8 @@ def process_file(input_csv, output_csv):
 
 
 def main():
-    for csv_ in glob.glob("data/tables/*.csv"):
+    source_list = glob.glob("data/tables/*.csv")
+    for csv_ in source_list:
         process_file(csv_, csv_.replace("tables", "lms"))
 
 
